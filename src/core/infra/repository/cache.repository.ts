@@ -1,29 +1,40 @@
+import { Message } from "../../../features/messages/domain/model/message";
+import { MessageRepository } from "../../../features/messages/infra/repository/message.repository";
 import Redis from "../data/connections/redis";
 
 export class CacheRepository {
-  async set(key: string, value: any): Promise<boolean> {
-    const redis = await Redis.getConnection();
-    const result = await redis.set(key, JSON.stringify(value));
-    if (!result) return false;
-    return true;
+  async set(uid: string): Promise<any> {
+    const userMessagesList = await this.refreshRedis(uid);
+
+    if (!userMessagesList) return false;
+    return userMessagesList;
   }
 
-  async get(key: string): Promise<any | undefined> {
+  async get(uidUser: string): Promise<any | undefined> {
     const redis = await Redis.getConnection();
-    const result = await redis.get(key);
+    const result = await redis.get(`roger:${uidUser}:messages`);
     if (!result) return undefined;
-    return JSON.parse(result);
+    return result;
   }
 
-  async exists(key: string): Promise<boolean> {
+  async delete(uidUser: string): Promise<boolean> {
     const redis = await Redis.getConnection();
-    const result = await redis.exists(key);
+    const result = await redis.del(`roger:${uidUser}:messages`);
     return result > 0;
   }
 
-  async delete(key: string): Promise<boolean> {
+  private async refreshRedis(uidUser: string): Promise<any | null> {
+    const repository = new MessageRepository();
+    const userMessages = await repository.getAllMessages(uidUser);
+
+    await this.delete(uidUser);
+
     const redis = await Redis.getConnection();
-    const result = await redis.del(key);
-    return result > 0;
+    const result = await redis.set(
+      `roger:${uidUser}:messages`,
+      JSON.stringify(userMessages)
+    );
+
+    return result;
   }
 }

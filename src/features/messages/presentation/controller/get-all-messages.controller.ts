@@ -6,7 +6,6 @@ import {
   ok,
 } from "../../../../core/presentation/helpers/http-helper";
 import { MessageRepository } from "../../infra/repository/message.repository";
-import { RefreshUserMessagesList } from "./refresh-user-messages-list-cache";
 export class GetAllMessages implements Controller {
   async handle(req: Request, res: Response): Promise<any> {
     try {
@@ -18,8 +17,7 @@ export class GetAllMessages implements Controller {
       }
       const repository = new MessageRepository();
       const findUserMessages = await repository.getAllMessages(uid);
-      const refreshMessages = new RefreshUserMessagesList();
-      await refreshMessages.handle(uid);
+
       return ok(res, findUserMessages);
     } catch (error: any) {
       serverError(res, error);
